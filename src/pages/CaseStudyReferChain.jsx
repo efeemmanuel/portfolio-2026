@@ -23,8 +23,8 @@ const sections = [
     label: 'PROBLEM',
     title: 'The Challenge',
     content: [
-      "Nigeria's hospital system relies on informal referrals  phone calls, handwritten letters, and word-of-mouth. There is no standard format, no tracking mechanism, and receiving hospitals often have no advance notice before a patient arrives at their door.",
-      "Patients like Mama Ngozi  a woman from Surulere referred from a Primary Health Centre to Lagos Island General, then to LUTH  arrive at each new facility as if they are a brand new patient. The same blood tests get repeated. The same history gets retold. No one in the chain has the complete picture. This is not an edge case. This is Tuesday in Nigeria.",
+      "Nigeria's hospital system relies on informal referrals phone calls, handwritten letters, and word-of-mouth. There is no standard format, no tracking mechanism, and receiving hospitals often have no advance notice before a patient arrives at their door.",
+      "Patients like Mama Ngozi a woman from Surulere referred from a Primary Health Centre to Lagos Island General, then to LUTH arrive at each new facility as if they are a brand new patient. The same blood tests get repeated. The same history gets retold. No one in the chain has the complete picture. This is not an edge case. This is Tuesday in Nigeria.",
     ],
   },
   {
@@ -32,8 +32,8 @@ const sections = [
     label: 'SOLUTION',
     title: 'The Approach',
     content: [
-      'ReferChain replaces the paper referral letter with a tracked, shareable, and persistent digital record that follows the patient across every hospital they visit. A doctor creates a digital referral in minutes  capturing symptoms, test results, urgency level, and the destination hospital. The receiving hospital is notified immediately by email with a full patient summary before the patient even arrives.',
-      'When a referral is accepted, the patient receives a unique referral code and QR code by email. At the receiving hospital, the receptionist scans the QR or types the code to pull up the complete referral history and all medical records  no phone calls, no repeated tests, no starting from zero.',
+      'ReferChain replaces the paper referral letter with a tracked, shareable, and persistent digital record that follows the patient across every hospital they visit. A doctor creates a digital referral in minutes capturing symptoms, test results, urgency level, and the destination hospital. The receiving hospital is notified immediately by email with a full patient summary before the patient even arrives.',
+      'When a referral is accepted, the patient receives a unique referral code and QR code by email. At the receiving hospital, the receptionist scans the QR or types the code to pull up the complete referral history and all medical records no phone calls, no repeated tests, no starting from zero.',
     ],
   },
   {
@@ -41,7 +41,7 @@ const sections = [
     label: 'TECH STACK & DECISIONS',
     title: 'Stack and Why',
     content: [
-      'Every technology decision was made deliberately  prioritising correctness, speed of delivery, and long-term maintainability over novelty.',
+      'Every technology decision was made deliberately prioritising correctness, speed of delivery, and long-term maintainability over novelty.',
     ],
     design: [
       {
@@ -50,23 +50,23 @@ const sections = [
       },
       {
         label: 'POSTGRESQL ON NEON',
-        value: 'PostgreSQL for relational integrity across hospitals, patients, doctors, and referrals. Neon provides serverless PostgreSQL with connection pooling  free tier sufficient for early stage, no infrastructure to manage, SSL enforced by default.',
+        value: 'PostgreSQL for relational integrity across hospitals, patients, doctors, and referrals. Neon provides serverless PostgreSQL with connection pooling free tier sufficient for early stage, no infrastructure to manage, SSL enforced by default.',
       },
       {
         label: 'JWT WITH SIMPLEJWT',
-        value: 'Short-lived access tokens (5 min) with long-lived refresh tokens (1 day). Automatic refresh on 401 responses handled by Axios interceptors on the frontend. Two user roles  hospital_admin and doctor  enforced at the permission class level on every endpoint.',
+        value: 'Short-lived access tokens (5 min) with long-lived refresh tokens (1 day). Automatic refresh on 401 responses handled by Axios interceptors on the frontend. Two user roles hospital_admin and doctor enforced at the permission class level on every endpoint.',
       },
       {
         label: 'REACT + VITE + TAILWIND',
-        value: 'React for component-driven UI with role-based routing. Vite for fast builds and hot module replacement. Tailwind for consistent design tokens without a component library dependency. Zustand for lightweight auth state management  no Redux overhead needed.',
+        value: 'React for component-driven UI with role-based routing. Vite for fast builds and hot module replacement. Tailwind for consistent design tokens without a component library dependency. Zustand for lightweight auth state management no Redux overhead needed.',
       },
       {
         label: 'REDIS CACHING',
-        value: 'Redis via django-redis on the three heaviest endpoints: GET /patients/{id}/, GET /referrals/{id}/, and GET /referrals/{id}/chain/. Cache invalidated on every write. Falls back to local memory cache gracefully when Redis is unavailable  the app never crashes without it.',
+        value: 'Redis via django-redis on the three heaviest endpoints: GET /patients/{id}/, GET /referrals/{id}/, and GET /referrals/{id}/chain/. Cache invalidated on every write. Falls back to local memory cache gracefully when Redis is unavailable the app never crashes without it.',
       },
       {
         label: 'RENDER + VERCEL + NEON',
-        value: 'Backend on Render  auto-deploys from GitHub main branch, migrations run on startup. Frontend on Vercel  auto-deploys on push, zero config for Vite. Database on Neon  decoupled from both, accessible from anywhere with SSL. Three separate deployment concerns, zero shared infrastructure.',
+        value: 'Backend on Render auto-deploys from GitHub main branch, migrations run on startup. Frontend on Vercel auto-deploys on push, zero config for Vite. Database on Neon decoupled from both, accessible from anywhere with SSL. Three separate deployment concerns, zero shared infrastructure.',
       },
     ],
   },
@@ -75,16 +75,16 @@ const sections = [
     label: 'SYSTEM DESIGN',
     title: 'Architecture',
     content: [
-      'The system is built around a central ownership model  ReferChain owns the patient profile, not any individual hospital. This is a deliberate architectural decision. If the originating hospital owned the profile, the chain would break the moment the patient moved to a new facility. Central ownership ensures the record is always accessible, always complete, and never lost regardless of how many hospitals a patient passes through.',
+      'The system is built around a central ownership model ReferChain owns the patient profile, not any individual hospital. This is a deliberate architectural decision. If the originating hospital owned the profile, the chain would break the moment the patient moved to a new facility. Central ownership ensures the record is always accessible, always complete, and never lost regardless of how many hospitals a patient passes through.',
     ],
     design: [
       {
         label: 'ACCESS CONTROL',
-        value: 'A hospital can only view a patient profile if they are the originating facility or an active recipient in that patient\'s current referral chain. Access is enforced at the query level  not just in views  so no data leaks between hospitals regardless of how the API is called.',
+        value: 'A hospital can only view a patient profile if they are the originating facility or an active recipient in that patient\'s current referral chain. Access is enforced at the query level not just in views so no data leaks between hospitals regardless of how the API is called.',
       },
       {
         label: 'REFERRAL STATE MACHINE',
-        value: 'Referrals move through four states: pending → accepted → completed, or pending → rejected. State transitions are enforced at the view layer with explicit checks  invalid transitions return 400. Only the receiving hospital can accept, reject, or complete a referral.',
+        value: 'Referrals move through four states: pending → accepted → completed, or pending → rejected. State transitions are enforced at the view layer with explicit checks invalid transitions return 400. Only the receiving hospital can accept, reject, or complete a referral.',
       },
       {
         label: 'NOTIFICATION PIPELINE',
@@ -92,7 +92,7 @@ const sections = [
       },
       {
         label: 'MEDICAL RECORDS',
-        value: 'Stored centrally against the patient profile  not per hospital. Records include symptoms, test results, diagnoses, prescriptions, and clinical notes. Any hospital in the referral chain can read the full record history. The referring hospital\'s records are included in the notification email to the receiving hospital.',
+        value: 'Stored centrally against the patient profile not per hospital. Records include symptoms, test results, diagnoses, prescriptions, and clinical notes. Any hospital in the referral chain can read the full record history. The referring hospital\'s records are included in the notification email to the receiving hospital.',
       },
     ],
   },
@@ -101,8 +101,8 @@ const sections = [
     label: 'INVITE FLOW',
     title: 'Doctor Onboarding',
     content: [
-      'Doctors do not self-register. A hospital admin sends an invite to a doctor\'s email  the backend generates a secure token, stores the invitation with a 48-hour expiry, and emails a registration link. The doctor clicks the link, verifies the token is valid and pending, then completes their profile and sets a password.',
-      'This approach was chosen deliberately. It ties every doctor account to a verified hospital, prevents arbitrary registrations, and gives the hospital admin full control over who can access their patients. The invite flow uses atomic transactions  if the User or Doctor record fails to create, neither is committed.',
+      'Doctors do not self-register. A hospital admin sends an invite to a doctor\'s email the backend generates a secure token, stores the invitation with a 48-hour expiry, and emails a registration link. The doctor clicks the link, verifies the token is valid and pending, then completes their profile and sets a password.',
+      'This approach was chosen deliberately. It ties every doctor account to a verified hospital, prevents arbitrary registrations, and gives the hospital admin full control over who can access their patients. The invite flow uses atomic transactions if the User or Doctor record fails to create, neither is committed.',
     ],
   },
   {
@@ -110,8 +110,8 @@ const sections = [
     label: 'PATIENT IDENTITY',
     title: 'The Two Codes',
     content: [
-      'Every patient gets two distinct codes that serve different purposes. The patient unique code is permanent  generated at registration, it is the patient\'s identity in the system across all hospitals, equivalent to a file number. The referral unique code is generated fresh only when a receiving hospital accepts a referral  it is the one-time travel document the patient carries to the receiving facility.',
-      'Non-tech-savvy patients receive their referral code by SMS or as a printed slip from the referring doctor. Tech-savvy patients receive the QR code by email and show it on their phone screen. Both paths resolve to the same lookup endpoint: GET /patients/code/{code}/  which returns the full patient profile and referral history to any hospital with legitimate access.',
+      'Every patient gets two distinct codes that serve different purposes. The patient unique code is permanent generated at registration, it is the patient\'s identity in the system across all hospitals, equivalent to a file number. The referral unique code is generated fresh only when a receiving hospital accepts a referral it is the one-time travel document the patient carries to the receiving facility.',
+      'Non-tech-savvy patients receive their referral code by SMS or as a printed slip from the referring doctor. Tech-savvy patients receive the QR code by email and show it on their phone screen. Both paths resolve to the same lookup endpoint: GET /patients/code/{code}/ which returns the full patient profile and referral history to any hospital with legitimate access.',
     ],
   },
   {
@@ -119,7 +119,7 @@ const sections = [
     label: 'IMPROVEMENTS',
     title: "What's Next",
     content: [
-      'SMS notifications via Termii or WhatsApp Cloud API  for patients without email and for facilities in areas with inconsistent data connectivity. The signal pipeline is already designed for this: the patient notification function is isolated and the fallback path is documented.',
+      'SMS notifications via Termii or WhatsApp Cloud API for patients without email and for facilities in areas with inconsistent data connectivity. The signal pipeline is already designed for this: the patient notification function is isolated and the fallback path is documented.',
       'Longer term, HL7 FHIR compliance to enable interoperability with larger health systems and government health infrastructure. FHIR would allow ReferChain to plug into existing health data exchanges rather than being a standalone system. Also planned: an audit log of every profile access, NIN-based duplicate detection, and an admin analytics dashboard for referral volume and response times by facility.',
     ],
   },
@@ -145,14 +145,14 @@ export default function CaseStudyReferChain() {
             back to projects
           </Link>
 
-          <div className="text-[0.6rem] text-black tracking-[0.14em] mb-3">CASE STUDY  02</div>
+          <div className="text-[0.6rem] text-black tracking-[0.14em] mb-3">CASE STUDY 02</div>
           <div className="font-display font-extrabold text-black tracking-[-0.03em] leading-none mb-2"
             style={{ fontSize: 'clamp(2rem, 5vw, 3.8rem)' }}>
             ReferChain
           </div>
           <div className="text-[0.65rem] text-muted tracking-[0.06em] mb-6">/projects/referchain</div>
           <p className="text-[0.82rem] text-dim leading-[1.9] max-w-[640px]">
-            ReferChain digitizes the patient referral process between Nigerian hospitals  replacing
+            ReferChain digitizes the patient referral process between Nigerian hospitals replacing
             handwritten letters and phone calls with a tracked, shareable, and persistent digital record
             that follows the patient across every hospital they visit. Built with a role-based Django REST
             API, a React frontend, and a central patient ownership model designed to survive the full
@@ -170,13 +170,13 @@ export default function CaseStudyReferChain() {
         </div>
       </div>
 
-      {/* Screenshot */}
+       {/* Screenshot */}
       <div className="bg-surface border-t border-b border-border">
         <div className="max-w-[1020px] mx-auto px-8">
           <div className="w-full aspect-[16/7] overflow-hidden">
             <img
               src="/images/referchain-screenshot.png"
-              alt="ReferChain admin dashboard"
+              alt="referchain dashboard screenshot"
               className="w-full h-full object-cover object-top"
             />
           </div>

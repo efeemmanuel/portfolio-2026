@@ -6,7 +6,7 @@ export default function Footer() {
           Efe Emmanuel Obaro · <span className="text-black">backend engineer</span>
         </span>
         <span className="text-[0.62rem] text-muted tracking-[0.06em]">
-          built with intention · 2020
+          built with intention · 2026
         </span>
       </div>
     </footer>

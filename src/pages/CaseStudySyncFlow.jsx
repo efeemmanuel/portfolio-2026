@@ -30,8 +30,8 @@ const sections = [
     label: 'PROBLEM',
     title: 'The Challenge',
     content: [
-      'Operations teams across companies were relying on spreadsheets and fragmented email threads to coordinate work. Tasks fell through the cracks, ownership was unclear, and there was no centralised audit trail for accountability or visibility into project progress.',
-      'There was no single place for admins, team leads, and members to see who owned what, what stage a task was at, or how projects were progressing across teams. As organisations grew, the absence of structure was creating costly delays and miscommunications between departments.',
+      'Operations teams across growing companies were coordinating work through spreadsheets, shared inboxes, and ad hoc Slack threads. There was no structured ownership model. Tasks were duplicated, dropped, or completed without anyone knowing. Project status lived in someone\'s head, not in a system.',
+      'The deeper problem was organisational: there was no concept of role scoped visibility. An intern and a department head saw the same undifferentiated pile of tasks. Team leads had no tooling to track what their team was actually shipping. Admins had no audit layer to understand where work was stalling and why.',
     ],
   },
   {
@@ -39,8 +39,9 @@ const sections = [
     label: 'SOLUTION',
     title: 'The Approach',
     content: [
-      'Built a full stack workspace platform with FastAPI and PostgreSQL that models companies, teams, projects, tasks, and members as structured relational entities. Role based access control governs every action: admins oversee the entire company, team leads manage their team scope, and members interact only with work assigned to them.',
-      'A Redis backed session layer handles OTP flows, JWT refresh token rotation, and invite token management. Async database access via SQLAlchemy and asyncpg keeps the API fast under load. The React frontend communicates through a typed Axios client with optimistic UI updates powered by TanStack Query.',
+      'SyncFlow models the real structure of a company as first class database entities. A company owns teams. Teams own projects and members. Projects own tasks and channels. Every query, every permission check, and every API response is scoped to this hierarchy. Nothing leaks across tenant boundaries.',
+      'Role based access control is not a bolt on. It is enforced at the dependency injection layer in FastAPI before any service logic runs. Admins get full company visibility. Team leads get team scoped write access. Members get read and update access on their own assigned work only. The frontend adapts its entire UI surface based on the authenticated role, not just hiding buttons but changing what data is fetched entirely.',
+      'The async stack was a deliberate choice. FastAPI with SQLAlchemy async and asyncpg means the server never blocks on a database round trip. Under concurrent load, requests interleave at the IO boundary rather than queuing behind each other. Redis handles everything that needs sub-millisecond reads: OTP codes with TTL, refresh token state, invite tokens, and session invalidation.',
     ],
   },
   {
@@ -48,33 +49,46 @@ const sections = [
     label: 'SYSTEM DESIGN',
     title: 'Architecture',
     content: [
-      'The system is structured around a multi tenant data model where every entity (users, teams, projects, tasks, channels) belongs to a company. Row level isolation enforces tenant boundaries at the query layer. Role based permission checks are enforced at the route layer on every endpoint before any service logic runs.',
+      'The backend is structured as a layered service architecture. Routes handle HTTP concerns and permission enforcement only. Services contain all business logic. Models define the schema. This separation means any service can be tested in isolation without touching the HTTP layer, and schema changes never bleed into route handlers.',
+      'The data model uses a strict multi tenant pattern. Every table that holds business data carries a company_id foreign key with CASCADE delete. Cascade constraints are enforced at the database level, not just the application layer, so orphaned records are structurally impossible. Alembic manages all schema migrations with full version history, making production schema changes auditable and reversible.',
     ],
     design: [
-      { label: 'DATA LAYER', value: 'PostgreSQL via Neon · SQLAlchemy async ORM · Alembic migrations · relational multi tenant schema · foreign key cascade deletes' },
-      { label: 'CACHE AND SESSION LAYER', value: 'Redis · OTP storage with TTL · JWT refresh token rotation · invite token management · session invalidation on logout' },
-      { label: 'AUTH LAYER', value: 'JWT access and refresh tokens · role based access control (admin, team lead, member) · route level permission enforcement · email OTP verification · invite based onboarding' },
-      { label: 'API LAYER', value: 'FastAPI · async request handling · Pydantic v2 validation · structured error responses · CORS configured per environment' },
-      { label: 'FRONTEND', value: 'React 19 · TanStack Query for server state · Zustand for client state · Axios typed API client · Framer Motion animations · Tailwind CSS v4 · dark mode with localStorage persistence' },
-      { label: 'INFRASTRUCTURE', value: 'Docker Compose for local development · Render for backend hosting · Vercel for frontend · Neon for hosted Postgres · Render Key Value for hosted Redis' },
+      { label: 'DATA LAYER', value: 'PostgreSQL via Neon · SQLAlchemy 2.0 async ORM · Alembic versioned migrations · multi tenant schema with company_id isolation · CASCADE deletes enforced at DB level · async session per request via dependency injection' },
+      { label: 'CACHE AND SESSION LAYER', value: 'Redis via Render Key Value · OTP codes stored with 10 minute TTL · JWT refresh tokens stored per user with invalidation on logout · invite tokens with configurable expiry · from_url connection for environment portability' },
+      { label: 'AUTH LAYER', value: 'JWT access tokens (30 min) and refresh tokens (7 day rotation) · three tier RBAC: admin, team lead, member · permission enforcement via FastAPI Depends before service execution · email OTP verification on company registration · tokenised invite flow for team leads and members' },
+      { label: 'API LAYER', value: 'FastAPI with async route handlers throughout · Pydantic v2 for request validation and response serialisation · structured ValueError to HTTPException mapping in every route · CORS origins split by environment · prefix versioned at /api/v1' },
+      { label: 'FRONTEND ARCHITECTURE', value: 'React 19 with TanStack Query for all server state · Zustand for auth and theme state with localStorage persistence · Axios client with request interceptor for token injection and 401 redirect · Framer Motion for layout animations · Tailwind CSS v4 with dark mode via custom variant · role adaptive UI: data fetching strategy changes per role, not just rendering' },
+      { label: 'INFRASTRUCTURE', value: 'Docker Compose for local development with health checks on Postgres and Redis before web service starts · Render Web Service via Docker runtime for backend · Render Key Value for Redis · Neon serverless Postgres with asyncpg connection string · Vercel for frontend with VITE_API_URL environment variable · GitHub push triggers auto deploy on both Render and Vercel' },
     ],
   },
   {
     num: '05',
-    label: 'FEATURES',
-    title: 'What Was Built',
+    label: 'TECH DECISIONS',
+    title: 'Why These Choices',
     content: [
-      'The platform covers the full lifecycle of team collaboration. Companies register and verify via OTP email. Admins invite team leads and members through tokenised email links. Projects are created and scoped to teams or company wide, each automatically provisioning a dedicated communication channel.',
-      'Tasks support priority levels, deadlines, assignees, comments, and file attachments. A channels system provides threaded messaging scoped to projects or company wide, with reply support and message deletion. Role based dashboards surface contextual stats per user type. Profile images, dark mode, and responsive layouts are supported across all devices.',
+      'FastAPI over Django REST Framework was chosen for its native async support. Django\'s ORM is synchronous at its core. For a multi tenant app with concurrent users across projects and channels, blocking the event loop on every query would have been a structural ceiling on throughput. FastAPI with asyncpg means database IO never blocks the server.',
+      'SQLAlchemy 2.0 over a lighter ORM like Tortoise was chosen for its maturity and the power of its query API. Complex queries involving joins across company, team, project, and task boundaries needed an expressive query layer. Tortoise would have required dropping to raw SQL for several of these. SQLAlchemy handled them natively.',
+      'TanStack Query on the frontend eliminated an entire class of bugs. Before it, every page was managing its own loading, error, and stale data state with useEffect and useState. TanStack Query centralises that into a single cache with automatic invalidation. When a task is updated in the detail panel, every other component showing that task data reflects the change without any manual coordination.',
+      'Redis for session state rather than database storage was a deliberate security and performance decision. OTP codes and refresh tokens are high read frequency, short lived, and need atomic TTL enforcement. Storing them in Postgres would have added unnecessary row churn and made TTL expiry a cron job rather than a database primitive.',
     ],
   },
   {
     num: '06',
+    label: 'FEATURES',
+    title: 'What Was Built',
+    content: [
+      'Company registration with OTP email verification. Tokenised invite flows for team leads and members. Project creation scoped to single teams or company wide with automatic channel provisioning per project. Task management with priority levels, deadlines, status tracking, assignees, threaded comments, and file attachments.',
+      'A channels system with company wide general rooms and project scoped channels, threaded replies, message deletion, and 5 second polling ahead of WebSocket integration. Role adaptive dashboards with contextual stats per user type. Profile image upload stored locally with cross app propagation. Dark mode with system preference detection. Fully responsive layout across mobile, tablet, and desktop.',
+    ],
+  },
+  {
+    num: '07',
     label: 'IMPROVEMENTS',
     title: "What's Next",
     content: [
-      'Planning to introduce a WebSocket layer for real time channel messaging and task status updates, removing the need for polling and reducing server load significantly. Push notifications for task assignments, comments, and mentions would close the feedback loop for users.',
-      'A file storage integration using S3 or Cloudflare R2 would replace the current URL based attachment model with true binary file uploads including image previews and video playback directly in the task detail view. A metrics layer surfacing time per task stage and team throughput would give leads and admins the data needed to continuously improve operational performance.',
+      'The channels system currently polls every 5 seconds. The next iteration replaces this with a WebSocket layer using FastAPI\'s native WebSocket support, pushing message events to connected clients rather than having them request repeatedly. This removes unnecessary server load and makes the chat experience feel instant.',
+      'File attachments currently accept URLs. The next version integrates Cloudflare R2 for binary file storage with presigned upload URLs generated server side. Images render as inline previews, videos play in the task panel, and all files are scoped to the company tenant with signed access so files from one company are never accessible to another.',
+      'A metrics layer is planned to surface per team and per project throughput: average time a task spends in each status, blocked rate by team, and completion velocity over rolling windows. This gives team leads and admins the data layer needed to identify bottlenecks systematically rather than through instinct.',
     ],
   },
 ]
@@ -106,10 +120,12 @@ export default function CaseStudySyncFlow() {
           </div>
           <div className="text-[0.65rem] text-muted tracking-[0.06em] mb-6">/projects/syncflow</div>
           <p className="text-[0.82rem] text-dim leading-[1.9] max-w-[640px]">
-            SyncFlow is a full stack team management platform built to replace fragmented task tracking across
-            company departments. It provides a single source of truth for projects, tasks, and team communication
-            with role based access control, real time channels, and an async backend designed for multi tenant
-            scale.
+            SyncFlow is a multi tenant team management platform built to replace fragmented task tracking across
+            company departments. It models the real structure of an organisation as first class database entities,
+            enforces role based access control at the infrastructure layer, and delivers a role adaptive frontend
+            that changes not just what users see but what data it fetches entirely based on who is authenticated.
+            Built async throughout: FastAPI, SQLAlchemy 2.0, asyncpg, and Redis handling everything from OTP
+            flows to session state.
           </p>
           <div className="flex gap-[0.35rem] flex-wrap mt-6">
             {tags.map(t => (
@@ -123,13 +139,13 @@ export default function CaseStudySyncFlow() {
         </div>
       </div>
 
-       {/* Screenshot */}
+      {/* Screenshot */}
       <div className="bg-surface border-t border-b border-border">
         <div className="max-w-[1020px] mx-auto px-8">
           <div className="w-full aspect-[16/7] overflow-hidden">
             <img
               src="/images/syncflow-screenshot.png"
-              alt="ReferChain admin dashboard"
+              alt="SyncFlow dashboard screenshot"
               className="w-full h-full object-cover object-top"
             />
           </div>
