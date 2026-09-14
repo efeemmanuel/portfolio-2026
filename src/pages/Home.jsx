@@ -1750,8 +1750,7 @@ export default function Home() {
                       text-white/40
                     "
                   >
-                    Full Stack Developer · Python · FastAPI · Django ·
-                    PostgreSQL · System Design
+                    Full Stack Developer
                   </div>
 
                 </div>
