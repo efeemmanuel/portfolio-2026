@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import Nav from '../components/Nav.jsx'
 import Footer from '../components/Footer.jsx'
 import SectionLabel from '../components/SectionLabel.jsx'
@@ -426,544 +427,872 @@ const ProjectShot = ({ src, alt }) => (
 export default function Home() {
   useReveal()
 
+  const [scrollProgress, setScrollProgress] = useState(0)
+  const [isDesktop, setIsDesktop] = useState(false)
+
+  useEffect(() => {
+    const checkScreen = () => {
+      setIsDesktop(window.innerWidth >= 1024)
+    }
+
+    checkScreen()
+    window.addEventListener('resize', checkScreen)
+
+    return () => {
+      window.removeEventListener('resize', checkScreen)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!isDesktop) {
+      setScrollProgress(0)
+      return
+    }
+
+    let ticking = false
+
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          /*
+           * The first viewport of scrolling controls
+           * the hero transformation.
+           *
+           * 0   = full screen hero
+           * 1   = left-side fixed hero
+           */
+          const transitionDistance = window.innerHeight * 0.9
+
+          const progress = Math.min(
+            Math.max(window.scrollY / transitionDistance, 0),
+            1
+          )
+
+          setScrollProgress(progress)
+
+          ticking = false
+        })
+
+        ticking = true
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll, {
+      passive: true,
+    })
+
+    handleScroll()
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+    }
+  }, [isDesktop])
+
+  /*
+   * Hero transformation
+   */
+
+  const heroWidth = isDesktop
+    ? `${100 - scrollProgress * 58}%`
+    : '100%'
+
+  const heroPadding = isDesktop
+    ? `${32 + scrollProgress * 12}px`
+    : '32px'
+
+  const heroContentScale = isDesktop
+    ? 1 - scrollProgress * 0.13
+    : 1
+
+  const heroContentTranslateX = isDesktop
+    ? scrollProgress * -18
+    : 0
+
+  const heroContentTranslateY = isDesktop
+    ? scrollProgress * -12
+    : 0
+
+  const heroProjectOpacity = isDesktop
+    ? Math.max(0, 1 - scrollProgress * 1.6)
+    : 1
+
+  const heroScrollOpacity = isDesktop
+    ? Math.max(0, 1 - scrollProgress * 2)
+    : 1
+
+  /*
+   * Right side starts hidden and gradually appears
+   * while the hero is transitioning.
+   */
+  const contentOpacity = isDesktop
+    ? Math.min(1, scrollProgress * 1.35)
+    : 1
+
+  const contentTranslateX = isDesktop
+    ? Math.max(0, 40 - scrollProgress * 40)
+    : 0
+
   return (
     <div className="min-h-screen bg-[#1a1a1c] text-white selection:bg-white selection:text-black overflow-x-hidden">
 
       <Nav />
 
-      {/* ───────────────── HERO ───────────────── */}
+
+      {/* =========================================================
+          HERO TRANSITION SPACE
+          ========================================================= */}
+<div
+  className="
+    relative
+    hidden
+    lg:block
+    h-[100vh]
+  "
+/>
+
+
+
+      {/* =========================================================
+          HERO
+          ========================================================= */}
 
       <section
-        className="relative py-28 pb-24 border-b border-white/[0.08] overflow-hidden"
         id="hero"
+        className={`
+          fixed
+          left-0
+          top-0
+          z-40
+          overflow-hidden
+          border-b
+          lg:border-b-0
+          lg:border-r
+          border-white/[0.08]
+
+          ${
+            isDesktop
+              ? 'lg:block'
+              : 'block'
+          }
+        `}
+        style={{
+          width: heroWidth,
+          height: isDesktop ? '100vh' : 'auto',
+          minHeight: isDesktop ? '100vh' : '100svh',
+
+          paddingLeft: isDesktop
+            ? heroPadding
+            : undefined,
+
+          paddingRight: isDesktop
+            ? heroPadding
+            : undefined,
+
+          paddingTop: isDesktop
+            ? heroPadding
+            : undefined,
+
+          paddingBottom: isDesktop
+            ? heroPadding
+            : undefined,
+
+          transition:
+            'width 90ms linear, padding 90ms linear',
+
+          backgroundColor: '#1a1a1c',
+        }}
       >
-        {/* animated ambient blobs */}
-        <div className="absolute -top-20 right-[-100px] w-[520px] h-[520px] rounded-full bg-white/[0.035] blur-[100px] pointer-events-none animate-[floatBlob_16s_ease-in-out_infinite]" />
-        <div className="absolute top-40 left-[-140px] w-[420px] h-[420px] rounded-full bg-emerald-400/[0.05] blur-[110px] pointer-events-none animate-[floatBlob_20s_ease-in-out_infinite_reverse]" />
-        <div className="absolute bottom-0 right-1/3 w-[300px] h-[300px] rounded-full bg-white/[0.02] blur-[90px] pointer-events-none animate-[floatBlob_13s_ease-in-out_infinite]" />
 
-        <div className="relative max-w-[1100px] mx-auto px-8">
 
-          {/* availability */}
-          <div className="flex items-center gap-3 mb-14 animate-[fadeIn_0.8s_ease-out]">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
-            </span>
+        {/* =====================================================
+            AMBIENT BACKGROUND
+            ===================================================== */}
 
-            <span className="text-[0.78rem] text-white/45 tracking-[0.15em] uppercase">
-              Available · Full Stack Developer
-            </span>
-          </div>
-
-          <div className="grid grid-cols-[1fr_auto] items-end gap-10 max-[700px]:grid-cols-1">
-
-            <div>
-
-              <h1
-                className="font-display font-bold leading-[0.9] tracking-[-0.045em] mb-8 bg-clip-text text-transparent"
-                style={{
-                  fontSize: 'clamp(3.6rem, 9vw, 7.2rem)',
-                  backgroundImage:
-                    'linear-gradient(110deg, #ffffff 25%, #7d7d82 42%, #ffffff 58%, #7d7d82 75%)',
-                  backgroundSize: '250% 100%',
-                  animation: 'shimmerText 6s linear infinite',
-                }}
-              >
-                Efe
-                <br />
-                Emmanuel
-                <br />
-                Obaro
-                <span className="inline-block w-[5px] h-[0.78em] bg-white align-[-0.04em] ml-3 animate-blink" />
-              </h1>
-
-              <div className="text-[1.02rem] text-white/45 leading-relaxed mb-12 max-w-[680px]">
-                <strong className="text-white font-semibold">
-                  I build systems that scale.
-                </strong>
-
-                <span className="mx-3 text-white/20">·</span>
-
-                Full Stack Developer
-
-                <span className="mx-3 text-white/20">·</span>
-
-                Scalability
-
-                <span className="mx-3 text-white/20">·</span>
-
-                System Design
-              </div>
-
-              <div className="flex gap-3 flex-wrap">
-
-                <a
-                  href="#contact"
-                  className="text-[0.82rem] tracking-[0.05em] px-6 py-3.5 bg-white text-black font-semibold inline-flex items-center gap-2 rounded-sm transition-all duration-300 hover:bg-white/85 hover:-translate-y-1 hover:shadow-[0_10px_30px_-8px_rgba(255,255,255,0.35)]"
-                >
-                  <MailIcon />
-                  Get in touch
-                </a>
-
-                <a
-                  href="https://github.com/efeemmanuel"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[0.82rem] tracking-[0.05em] px-6 py-3.5 bg-transparent text-white border border-white/15 inline-flex items-center gap-2 rounded-sm transition-all duration-300 hover:border-white/50 hover:-translate-y-1"
-                >
-                  <GithubIcon />
-                  GitHub
-                </a>
-
-              </div>
-            </div>
-
-            {/* project count */}
-            <div className="font-display font-bold text-[7rem] leading-none text-right select-none max-[700px]:hidden">
-              <span className="text-white/[0.06]">
-                15+
-              </span>
-
-              <span className="block text-[0.75rem] font-normal text-white/25 tracking-[0.1em] text-right mt-2">
-                PROJECTS SHIPPED
-              </span>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* ───────────────── APPROACH ───────────────── */}
-
-      <section
-        className="py-24 border-b border-white/[0.08] reveal"
-        id="think"
-      >
-        <div className="max-w-[1100px] mx-auto px-8">
-
-          <SectionLabel>
-            01 · APPROACH
-          </SectionLabel>
-
-          <p
-            className="font-display font-normal text-white max-w-[820px] leading-[1.6]"
-            style={{ fontSize: 'clamp(1.3rem, 2.8vw, 1.85rem)' }}
-          >
-            I approach software as{' '}
-            <strong className="font-semibold">
-              systems, not just code.
-            </strong>
-
-            <br />
-            <br />
-
-            My focus is on building applications that are scalable,
-            maintainable, and{' '}
-            <strong className="font-semibold">
-              resilient over time.
-            </strong>{' '}
-
-            I think in terms of structure: how components interact,
-            how data flows, and how systems behave under pressure.
-
-            <br />
-            <br />
-
-            Engineering is not just about making things work.
-            It's about making them{' '}
-            <strong className="font-semibold">
-              work well, at scale.
-            </strong>
-          </p>
-
-        </div>
-      </section>
-
-      {/* ───────────────── SKILLS ───────────────── */}
-
-      <section
-        className="py-24 border-b border-white/[0.08] reveal"
-        id="skills"
-      >
-        <div className="max-w-[1100px] mx-auto px-8">
-
-          <SectionLabel>
-            02 · SKILLS
-          </SectionLabel>
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
 
           <div
-            className="grid gap-x-12 gap-y-12"
-            style={{
-              gridTemplateColumns:
-                'repeat(auto-fit, minmax(180px, 1fr))',
-            }}
-          >
+            className="
+              absolute
+              -top-32
+              right-[-120px]
+              w-[600px]
+              h-[600px]
+              rounded-full
+              bg-white/[0.035]
+              blur-[120px]
+              animate-[floatBlob_16s_ease-in-out_infinite]
+            "
+          />
 
-            {skillGroups.map((group, gi) => (
+          <div
+            className="
+              absolute
+              top-40
+              left-[-160px]
+              w-[500px]
+              h-[500px]
+              rounded-full
+              bg-emerald-400/[0.055]
+              blur-[120px]
+              animate-[floatBlob_20s_ease-in-out_infinite_reverse]
+            "
+          />
+
+          <div
+            className="
+              absolute
+              bottom-[-150px]
+              right-1/3
+              w-[420px]
+              h-[420px]
+              rounded-full
+              bg-amber-200/[0.025]
+              blur-[110px]
+              animate-[floatBlob_15s_ease-in-out_infinite]
+            "
+          />
+
+
+          {/* subtle grid */}
+
+          <div
+            className="absolute inset-0 opacity-[0.018]"
+            style={{
+              backgroundImage:
+                "linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)",
+              backgroundSize: "70px 70px",
+            }}
+          />
+
+        </div>
+
+
+
+        {/* =====================================================
+            HERO CONTENT
+            ===================================================== */}
+
+        <div
+          className="
+            relative
+            z-10
+            w-full
+            h-full
+            flex
+            items-center
+          "
+          style={{
+            transform: `
+              translate3d(
+                ${heroContentTranslateX}px,
+                ${heroContentTranslateY}px,
+                0
+              )
+              scale(${heroContentScale})
+            `,
+
+            transformOrigin: 'left center',
+
+            transition:
+              'transform 90ms linear',
+          }}
+        >
+
+          <div className="w-full max-w-[1200px] mx-auto">
+
+
+            {/* =================================================
+                AVAILABILITY
+                ================================================= */}
+
+            <div
+              className="
+                flex
+                items-center
+                gap-3
+                mb-14
+                animate-[fadeInUp_0.8s_ease-out]
+              "
+            >
+
+              <span className="relative flex h-2 w-2">
+
+                <span
+                  className="
+                    animate-ping
+                    absolute
+                    inline-flex
+                    h-full
+                    w-full
+                    rounded-full
+                    bg-emerald-400
+                    opacity-60
+                  "
+                />
+
+                <span
+                  className="
+                    relative
+                    inline-flex
+                    rounded-full
+                    h-2
+                    w-2
+                    bg-emerald-400
+                    shadow-[0_0_12px_rgba(52,211,153,0.45)]
+                  "
+                />
+
+              </span>
+
+
+              <span
+                className="
+                  text-[0.78rem]
+                  text-white/45
+                  tracking-[0.15em]
+                  uppercase
+                "
+              >
+                Available · Full Stack Developer
+              </span>
+
+            </div>
+
+
+
+            {/* =================================================
+                MAIN HERO GRID
+                ================================================= */}
+
+            <div
+              className="
+                grid
+                grid-cols-[1fr_auto]
+                items-end
+                gap-14
+                max-[700px]:grid-cols-1
+              "
+            >
+
+
+              {/* =================================================
+                  MAIN CONTENT
+                  ================================================= */}
+
+              <div>
+
+
+                {/* NAME */}
+
+                <h1
+                  className="
+                    font-display
+                    font-bold
+                    leading-[0.9]
+                    tracking-[-0.045em]
+                    mb-8
+                    bg-clip-text
+                    text-transparent
+                    animate-[fadeInUp_1s_ease-out]
+                  "
+                  style={{
+                    fontSize:
+                      'clamp(3.6rem, 9vw, 7.2rem)',
+
+                    backgroundImage:
+                      'linear-gradient(110deg, #ffffff 20%, #77777d 40%, #ffffff 55%, #77777d 75%, #ffffff 90%)',
+
+                    backgroundSize:
+                      '250% 100%',
+
+                    animation:
+                      'fadeInUp 1s ease-out, shimmerText 6s linear infinite',
+                  }}
+                >
+
+                  Efe
+                  <br />
+
+                  Emmanuel
+                  <br />
+
+                  Obaro
+
+                  <span
+                    className="
+                      inline-block
+                      w-[5px]
+                      h-[0.78em]
+                      bg-emerald-400
+                      align-[-0.04em]
+                      ml-3
+                      animate-blink
+                      shadow-[0_0_15px_rgba(52,211,153,0.4)]
+                    "
+                  />
+
+                </h1>
+
+
+
+                {/* DESCRIPTION */}
+
+                <div
+                  className="
+                    text-[1.02rem]
+                    text-white/45
+                    leading-relaxed
+                    mb-12
+                    max-w-[680px]
+                    animate-[fadeInUp_1.15s_ease-out]
+                  "
+                >
+
+                  <strong className="text-white font-semibold">
+                    I build systems that scale.
+                  </strong>
+
+                  <span className="mx-3 text-white/20">
+                    ·
+                  </span>
+
+                  Full Stack Developer
+
+                  <span className="mx-3 text-white/20">
+                    ·
+                  </span>
+
+                  Scalability
+
+                  <span className="mx-3 text-white/20">
+                    ·
+                  </span>
+
+                  System Design
+
+                </div>
+
+
+
+                {/* BUTTONS */}
+
+                <div
+                  className="
+                    flex
+                    gap-3
+                    flex-wrap
+                    animate-[fadeInUp_1.3s_ease-out]
+                  "
+                >
+
+                  <a
+                    href="#contact"
+                    className="
+                      group
+                      text-[0.82rem]
+                      tracking-[0.05em]
+                      px-6
+                      py-3.5
+                      bg-white
+                      text-black
+                      font-semibold
+                      inline-flex
+                      items-center
+                      gap-2
+                      rounded-sm
+                      transition-all
+                      duration-300
+                      hover:bg-emerald-300
+                      hover:-translate-y-1
+                      hover:shadow-[0_12px_35px_-10px_rgba(52,211,153,0.35)]
+                    "
+                  >
+
+                    <MailIcon />
+
+                    <span>
+                      Get in touch
+                    </span>
+
+                    <span
+                      className="
+                        transition-transform
+                        duration-300
+                        group-hover:translate-x-1
+                      "
+                    >
+                      →
+                    </span>
+
+                  </a>
+
+
+
+                  <a
+                    href="https://github.com/efeemmanuel"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="
+                      group
+                      text-[0.82rem]
+                      tracking-[0.05em]
+                      px-6
+                      py-3.5
+                      bg-transparent
+                      text-white
+                      border
+                      border-white/15
+                      inline-flex
+                      items-center
+                      gap-2
+                      rounded-sm
+                      transition-all
+                      duration-300
+                      hover:border-white/50
+                      hover:bg-white/[0.025]
+                      hover:-translate-y-1
+                    "
+                  >
+
+                    <GithubIcon />
+
+                    <span>
+                      GitHub
+                    </span>
+
+                    <span
+                      className="
+                        text-white/30
+                        transition-transform
+                        duration-300
+                        group-hover:translate-x-1
+                      "
+                    >
+                      ↗
+                    </span>
+
+                  </a>
+
+                </div>
+
+              </div>
+
+
+
+              {/* =================================================
+                  PROJECT COUNT
+                  ================================================= */}
 
               <div
-                key={group.cat}
-                className="reveal"
-                style={{ transitionDelay: `${gi * 70}ms` }}
-              >
-
-                <div className="text-[0.72rem] text-white/30 tracking-[0.16em] border-b border-white/[0.08] pb-3 mb-5 uppercase">
-                  {group.cat}
-                </div>
-
-                <div className="flex flex-col gap-4">
-
-                  {group.items.map(item => {
-
-                    const Logo = SkillLogos[item]
-
-                    return (
-                      <div
-                        key={item}
-                        className="flex items-center gap-3 text-[0.95rem] text-white/70 group cursor-default transition-all duration-300 hover:text-white hover:translate-x-1.5"
-                      >
-
-                        {Logo ? (
-                          <span className="text-white/45 flex-shrink-0 transition-all duration-300 group-hover:text-white group-hover:rotate-[8deg] group-hover:scale-110">
-                            <Logo />
-                          </span>
-                        ) : (
-                          <span className="w-[17px] h-[17px] flex-shrink-0" />
-                        )}
-
-                        {item}
-
-                      </div>
-                    )
-                  })}
-
-                </div>
-              </div>
-            ))}
-
-          </div>
-        </div>
-      </section>
-
-      {/* ───────────────── PROJECTS ───────────────── */}
-
-      <section
-        className="py-24 border-b border-white/[0.08]"
-        id="projects"
-      >
-
-        <div className="max-w-[1400px] mx-auto px-8">
-
-          <SectionLabel>
-            03 · PROJECTS
-          </SectionLabel>
-
-        </div>
-
-        <div className="max-w-[1400px] mx-auto px-8">
-
-          <div className="flex flex-col gap-6">
-
-            {projects.map((proj, index) => (
-
-              <article
-                key={proj.name}
-                className={`
-                  reveal
-                  group
-                  relative
-                  bg-[#212124]
-                  border border-white/[0.08]
-                  rounded-lg
-                  overflow-hidden
-                  transition-all
-                  duration-500
-                  hover:border-white/[0.2]
-                  hover:bg-[#242428]
-                  hover:-translate-y-1.5
-                  ${proj.wip ? 'opacity-60' : ''}
-                `}
+                className="
+                  font-display
+                  font-bold
+                  text-[7rem]
+                  leading-none
+                  text-right
+                  select-none
+                  max-[700px]:hidden
+                "
                 style={{
-                  transitionDelay: `${index * 90}ms`,
+                  opacity: heroProjectOpacity,
+
+                  transform: `
+                    translateX(${scrollProgress * 70}px)
+                    scale(${1 - scrollProgress * 0.25})
+                  `,
+
+                  transition:
+                    'opacity 100ms linear, transform 100ms linear',
                 }}
               >
 
-                <div className="grid grid-cols-[1.15fr_1fr] max-[900px]:grid-cols-1">
+                <span className="text-white/[0.06]">
+                  15+
+                </span>
 
-                  {/* IMAGE */}
+                <span
+                  className="
+                    block
+                    text-[0.75rem]
+                    font-normal
+                    text-white/25
+                    tracking-[0.1em]
+                    text-right
+                    mt-2
+                  "
+                >
+                  PROJECTS SHIPPED
+                </span>
 
-                  <div className="p-6">
+              </div>
 
-                    <div className="text-[0.7rem] text-white/30 tracking-[0.14em] mb-4">
-                      {proj.num}
-                    </div>
-
-                    <ProjectShot
-                      src={proj.screenshot}
-                      alt={proj.screenshotAlt}
-                    />
-
-                  </div>
-
-                  {/* DETAILS */}
-
-                  <div className="p-9 flex flex-col justify-center max-[900px]:pt-4">
-
-                    <div className="flex items-start justify-between gap-5 mb-5">
-
-                      <div className="font-display font-bold text-[1.9rem] tracking-[-0.025em] text-white">
-                        {proj.name}
-                      </div>
-
-                      {proj.wip ? (
-                        <WipBadge />
-                      ) : (
-                        <LiveBadge />
-                      )}
-
-                    </div>
-
-                    <p className="text-[0.95rem] text-white/45 leading-[1.8] mb-6 max-w-[520px]">
-                      {proj.desc}
-                    </p>
-
-                    {/* TAGS */}
-
-                    <div className="flex gap-2 flex-wrap mb-7">
-
-                      {proj.tags.map(tag => (
-
-                        <span
-                          key={tag.label}
-                          className={`
-                            text-[0.75rem]
-                            tracking-[0.05em]
-                            px-2.5
-                            py-1
-                            rounded-sm
-                            border
-                            font-medium
-                            transition-all
-                            duration-300
-                            hover:-translate-y-0.5
-                            ${
-                              tag.hi
-                                ? 'bg-white text-black border-white'
-                                : 'bg-transparent text-white/45 border-white/10'
-                            }
-                          `}
-                        >
-                          {tag.label}
-                        </span>
-
-                      ))}
-
-                    </div>
-
-                    {/* ACTIONS */}
-
-                    <div className="flex gap-2 flex-wrap">
-
-                      {!proj.wip ? (
-                        <>
-
-                          {proj.liveUrl && (
-                            <a
-                              href={proj.liveUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-[0.78rem] tracking-[0.05em] px-3.5 py-2 border border-white/10 text-white/55 bg-transparent rounded-sm transition-all duration-300 hover:border-white/40 hover:text-white hover:-translate-y-0.5"
-                            >
-                              Live Demo ↗
-                            </a>
-                          )}
-
-                          {proj.githubUrl && (
-                            <a
-                              href={proj.githubUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-[0.78rem] tracking-[0.05em] px-3.5 py-2 border border-white/10 text-white/55 bg-transparent rounded-sm transition-all duration-300 hover:border-white/40 hover:text-white hover:-translate-y-0.5"
-                            >
-                              GitHub ↗
-                            </a>
-                          )}
-
-                        </>
-                      ) : (
-
-                        <span className="text-[0.75rem] text-white/25 tracking-[0.06em]">
-                          Available soon
-                        </span>
-
-                      )}
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-                {/* corner glow accent on hover */}
-                <div className="pointer-events-none absolute -top-1/2 -right-1/4 w-72 h-72 rounded-full bg-white/[0.04] blur-[80px] opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-
-              </article>
-
-            ))}
+            </div>
 
           </div>
 
         </div>
+
+
+
+        {/* =====================================================
+            SCROLL INDICATOR
+            ===================================================== */}
+
+        <div
+          className="
+            absolute
+            bottom-8
+            left-8
+            flex
+            items-center
+            gap-3
+            text-[0.62rem]
+            uppercase
+            tracking-[0.2em]
+            text-white/20
+          "
+          style={{
+            opacity: heroScrollOpacity,
+            transition:
+              'opacity 100ms linear',
+          }}
+        >
+
+          <span className="w-8 h-px bg-white/15" />
+
+          Scroll to explore
+
+        </div>
+
       </section>
 
-      {/* ───────────────── EXPERIENCE ───────────────── */}
 
-      <section
-        className="py-24 border-b border-white/[0.08] reveal"
-        id="experience"
+
+      {/* =========================================================
+          SCROLLING CONTENT
+          ========================================================= */}
+
+      <main
+        className="
+          relative
+          z-10
+          bg-[#1a1a1c]
+
+          lg:ml-[42%]
+        "
+        style={{
+          opacity: contentOpacity,
+
+          transform: `
+            translateX(${contentTranslateX}px)
+          `,
+
+          transition:
+            'opacity 120ms linear, transform 120ms linear',
+        }}
       >
 
-        <div className="max-w-[1100px] mx-auto px-8">
 
-          <SectionLabel>
-            04 · EXPERIENCE
-          </SectionLabel>
 
-          <div className="border border-white/[0.08] bg-[#212124] rounded-lg p-9 transition-all duration-300 hover:border-white/[0.18] hover:-translate-y-1">
+        {/* =====================================================
+            APPROACH
+            ===================================================== */}
 
-            <div className="font-display font-bold text-[1.3rem] text-white mb-2">
-              Software Developer
-            </div>
+        <section
+          className="
+            min-h-screen
+            flex
+            items-center
+            py-24
+            px-8
+            border-b
+            border-white/[0.08]
+            reveal
+          "
+          id="think"
+        >
 
-            <div className="text-[0.75rem] text-white/30 tracking-[0.1em] mb-5 uppercase">
-              Asoro Automotive
-            </div>
+          <div className="max-w-[820px]">
 
-            <p className="text-[0.95rem] text-white/45 leading-[1.85] max-w-[650px]">
-              Working on backend infrastructure: designing and maintaining
-              APIs, building reliable data pipelines, and improving system
-              performance. Focused on maintainable code, reducing technical
-              debt, and architecting for scale.
+            <SectionLabel>
+              01 · APPROACH
+            </SectionLabel>
+
+
+            <p
+              className="
+                font-display
+                font-normal
+                text-white
+                max-w-[820px]
+                leading-[1.6]
+              "
+              style={{
+                fontSize:
+                  'clamp(1.3rem, 2.8vw, 1.85rem)',
+              }}
+            >
+
+              I approach software as{' '}
+
+              <strong className="font-semibold">
+                systems, not just code.
+              </strong>
+
+
+              <br />
+              <br />
+
+
+              My focus is on building applications that are scalable,
+              maintainable, and{' '}
+
+              <strong className="font-semibold">
+                resilient over time.
+              </strong>{' '}
+
+              I think in terms of structure: how components interact,
+              how data flows, and how systems behave under pressure.
+
+
+              <br />
+              <br />
+
+
+              Engineering is not just about making things work.
+              It's about making them{' '}
+
+              <strong className="font-semibold">
+                work well, at scale.
+              </strong>
+
             </p>
 
           </div>
 
-          {/* RESUME */}
+        </section>
 
-          <div className="mt-14">
 
-            <div className="text-[0.7rem] text-white/30 tracking-[0.16em] mb-5 uppercase">
-              Resume
-            </div>
 
-            <div className="border border-white/[0.08] bg-[#212124] rounded-lg p-8 flex items-center justify-between flex-wrap gap-6 transition-all duration-300 hover:border-white/[0.18] hover:-translate-y-1">
+        {/* =====================================================
+            SKILLS
+            ===================================================== */}
 
-              <div>
+        <section
+          className="
+            py-24
+            border-b
+            border-white/[0.08]
+            reveal
+          "
+          id="skills"
+        >
 
-                <div className="font-display font-bold text-[1.15rem] text-white mb-2">
-                  Efe Emmanuel Obaro
-                </div>
+          <div className="max-w-[1100px] mx-auto px-8">
 
-                <div className="text-[0.8rem] text-white/40">
-                  Full Stack Developer · Python · FastAPI · Django ·
-                  PostgreSQL · System Design
-                </div>
+            <SectionLabel>
+              02 · SKILLS
+            </SectionLabel>
 
-              </div>
 
-              <a
-                href="/Efe_Emmanuel_Obaro_Resume.pdf"
-                download
-                className="text-[0.78rem] tracking-[0.05em] px-5 py-3 bg-white text-black font-semibold inline-flex items-center gap-2 rounded-sm transition-all duration-300 hover:bg-white/85 hover:-translate-y-1"
-              >
-                <DownloadIcon />
-                Download PDF
-              </a>
+            <div
+              className="grid gap-x-12 gap-y-12"
+              style={{
+                gridTemplateColumns:
+                  'repeat(auto-fit, minmax(180px, 1fr))',
+              }}
+            >
 
-            </div>
-
-          </div>
-
-        </div>
-      </section>
-
-      {/* ───────────────── CONTACT ───────────────── */}
-
-      <section
-        className="py-24 border-b border-white/[0.08] reveal"
-        id="contact"
-      >
-
-        <div className="max-w-[1100px] mx-auto px-8">
-
-          <SectionLabel>
-            05 · CONTACT
-          </SectionLabel>
-
-          <div className="grid grid-cols-2 gap-16 items-start max-[700px]:grid-cols-1">
-
-            <div>
-
-              <div
-                className="font-display font-bold text-white leading-[1.05] tracking-[-0.03em] mb-6"
-                style={{ fontSize: 'clamp(2.1rem, 5vw, 3.5rem)' }}
-              >
-                Let's build
-                <br />
-                something real.
-              </div>
-
-              <p className="text-[0.95rem] text-white/45 leading-[1.9] max-w-[520px]">
-                Open to Full Stack Developer roles and interesting system
-                design problems. If you're building something that needs
-                to scale, let's talk.
-              </p>
-
-            </div>
-
-            <div className="flex flex-col gap-5">
-
-              {[
-                {
-                  label: 'EMAIL',
-                  value: 'efeemmanuel2030@gmail.com',
-                  href: 'mailto:efeemmanuel2030@gmail.com',
-                },
-                {
-                  label: 'GITHUB',
-                  value: 'github.com/efeemmanuel',
-                  href: 'https://github.com/efeemmanuel',
-                },
-                {
-                  label: 'LINKEDIN',
-                  value: 'linkedin.com/in/efeemmanuel',
-                  href: 'https://www.linkedin.com/in/efeemmanuel',
-                },
-                {
-                  label: 'X (TWITTER)',
-                  value: '@efeobaro',
-                  href: 'https://x.com/ox_emmanuel',
-                },
-              ].map(ci => (
+              {skillGroups.map((group, gi) => (
 
                 <div
-                  key={ci.label}
-                  className="border-l-2 border-white/10 pl-5 transition-all duration-300 hover:border-white group"
+                  key={group.cat}
+                  className="reveal"
+                  style={{
+                    transitionDelay:
+                      `${gi * 70}ms`,
+                  }}
                 >
 
-                  <div className="text-[0.68rem] text-white/30 tracking-[0.13em] mb-1.5 uppercase">
-                    {ci.label}
+                  <div
+                    className="
+                      text-[0.72rem]
+                      text-white/30
+                      tracking-[0.16em]
+                      border-b
+                      border-white/[0.08]
+                      pb-3
+                      mb-5
+                      uppercase
+                    "
+                  >
+                    {group.cat}
                   </div>
 
-                  <a
-                    href={ci.href}
-                    target={ci.href.startsWith('http') ? '_blank' : undefined}
-                    rel="noreferrer"
-                    className="text-[0.94rem] text-white/55 block transition-colors duration-300 group-hover:text-white"
-                  >
-                    {ci.value}
-                  </a>
+
+                  <div className="flex flex-col gap-4">
+
+                    {group.items.map(item => {
+
+                      const Logo =
+                        SkillLogos[item]
+
+                      return (
+
+                        <div
+                          key={item}
+                          className="
+                            flex
+                            items-center
+                            gap-3
+                            text-[0.95rem]
+                            text-white/70
+                            group
+                            cursor-default
+                            transition-all
+                            duration-300
+                            hover:text-white
+                            hover:translate-x-1.5
+                          "
+                        >
+
+                          {Logo ? (
+
+                            <span
+                              className="
+                                text-white/45
+                                flex-shrink-0
+                                transition-all
+                                duration-300
+                                group-hover:text-white
+                                group-hover:rotate-[8deg]
+                                group-hover:scale-110
+                              "
+                            >
+                              <Logo />
+                            </span>
+
+                          ) : (
+
+                            <span
+                              className="
+                                w-[17px]
+                                h-[17px]
+                                flex-shrink-0
+                              "
+                            />
+
+                          )}
+
+                          {item}
+
+                        </div>
+
+                      )
+
+                    })}
+
+                  </div>
 
                 </div>
 
@@ -972,61 +1301,815 @@ export default function Home() {
             </div>
 
           </div>
-        </div>
-      </section>
 
-      <Footer />
+        </section>
 
-      {/* small local animation definitions */}
+
+
+        {/* =====================================================
+            PROJECTS
+            ===================================================== */}
+
+        <section
+          className="
+            py-24
+            border-b
+            border-white/[0.08]
+          "
+          id="projects"
+        >
+
+          <div className="max-w-[1400px] mx-auto px-8">
+
+            <SectionLabel>
+              03 · PROJECTS
+            </SectionLabel>
+
+
+            <div className="flex flex-col gap-6">
+
+              {projects.map((proj, index) => (
+
+                <article
+                  key={proj.name}
+                  className={`
+                    reveal
+                    group
+                    relative
+                    bg-[#212124]
+                    border
+                    border-white/[0.08]
+                    rounded-lg
+                    overflow-hidden
+                    transition-all
+                    duration-500
+                    hover:border-white/[0.2]
+                    hover:bg-[#242428]
+                    hover:-translate-y-1.5
+
+                    ${proj.wip ? 'opacity-60' : ''}
+                  `}
+                  style={{
+                    transitionDelay:
+                      `${index * 90}ms`,
+                  }}
+                >
+
+                  <div
+                    className="
+                      grid
+                      grid-cols-[1.15fr_1fr]
+                      max-[900px]:grid-cols-1
+                    "
+                  >
+
+                    {/* IMAGE */}
+
+                    <div className="p-6">
+
+                      <div
+                        className="
+                          text-[0.7rem]
+                          text-white/30
+                          tracking-[0.14em]
+                          mb-4
+                        "
+                      >
+                        {proj.num}
+                      </div>
+
+
+                      <ProjectShot
+                        src={proj.screenshot}
+                        alt={proj.screenshotAlt}
+                      />
+
+                    </div>
+
+
+
+                    {/* DETAILS */}
+
+                    <div
+                      className="
+                        p-9
+                        flex
+                        flex-col
+                        justify-center
+                        max-[900px]:pt-4
+                      "
+                    >
+
+                      <div
+                        className="
+                          flex
+                          items-start
+                          justify-between
+                          gap-5
+                          mb-5
+                        "
+                      >
+
+                        <div
+                          className="
+                            font-display
+                            font-bold
+                            text-[1.9rem]
+                            tracking-[-0.025em]
+                            text-white
+                          "
+                        >
+                          {proj.name}
+                        </div>
+
+
+                        {proj.wip ? (
+                          <WipBadge />
+                        ) : (
+                          <LiveBadge />
+                        )}
+
+                      </div>
+
+
+                      <p
+                        className="
+                          text-[0.95rem]
+                          text-white/45
+                          leading-[1.8]
+                          mb-6
+                          max-w-[520px]
+                        "
+                      >
+                        {proj.desc}
+                      </p>
+
+
+                      {/* TAGS */}
+
+                      <div
+                        className="
+                          flex
+                          gap-2
+                          flex-wrap
+                          mb-7
+                        "
+                      >
+
+                        {proj.tags.map(tag => (
+
+                          <span
+                            key={tag.label}
+                            className={`
+                              text-[0.75rem]
+                              tracking-[0.05em]
+                              px-2.5
+                              py-1
+                              rounded-sm
+                              border
+                              font-medium
+                              transition-all
+                              duration-300
+                              hover:-translate-y-0.5
+
+                              ${
+                                tag.hi
+                                  ? 'bg-white text-black border-white'
+                                  : 'bg-transparent text-white/45 border-white/10'
+                              }
+                            `}
+                          >
+                            {tag.label}
+                          </span>
+
+                        ))}
+
+                      </div>
+
+
+
+                      {/* ACTIONS */}
+
+                      <div
+                        className="
+                          flex
+                          gap-2
+                          flex-wrap
+                        "
+                      >
+
+                        {!proj.wip ? (
+
+                          <>
+
+                            {proj.liveUrl && (
+
+                              <a
+                                href={proj.liveUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="
+                                  text-[0.78rem]
+                                  tracking-[0.05em]
+                                  px-3.5
+                                  py-2
+                                  border
+                                  border-white/10
+                                  text-white/55
+                                  bg-transparent
+                                  rounded-sm
+                                  transition-all
+                                  duration-300
+                                  hover:border-white/40
+                                  hover:text-white
+                                  hover:-translate-y-0.5
+                                "
+                              >
+                                Live Demo ↗
+                              </a>
+
+                            )}
+
+
+                            {proj.githubUrl && (
+
+                              <a
+                                href={proj.githubUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="
+                                  text-[0.78rem]
+                                  tracking-[0.05em]
+                                  px-3.5
+                                  py-2
+                                  border
+                                  border-white/10
+                                  text-white/55
+                                  bg-transparent
+                                  rounded-sm
+                                  transition-all
+                                  duration-300
+                                  hover:border-white/40
+                                  hover:text-white
+                                  hover:-translate-y-0.5
+                                "
+                              >
+                                GitHub ↗
+                              </a>
+
+                            )}
+
+                          </>
+
+                        ) : (
+
+                          <span
+                            className="
+                              text-[0.75rem]
+                              text-white/25
+                              tracking-[0.06em]
+                            "
+                          >
+                            Available soon
+                          </span>
+
+                        )}
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+
+                  {/* corner glow */}
+
+                  <div
+                    className="
+                      pointer-events-none
+                      absolute
+                      -top-1/2
+                      -right-1/4
+                      w-72
+                      h-72
+                      rounded-full
+                      bg-white/[0.04]
+                      blur-[80px]
+                      opacity-0
+                      group-hover:opacity-100
+                      transition-opacity
+                      duration-700
+                    "
+                  />
+
+                </article>
+
+              ))}
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+
+        {/* =====================================================
+            EXPERIENCE
+            ===================================================== */}
+
+        <section
+          className="
+            py-24
+            border-b
+            border-white/[0.08]
+            reveal
+          "
+          id="experience"
+        >
+
+          <div className="max-w-[1100px] mx-auto px-8">
+
+            <SectionLabel>
+              04 · EXPERIENCE
+            </SectionLabel>
+
+
+            <div
+              className="
+                border
+                border-white/[0.08]
+                bg-[#212124]
+                rounded-lg
+                p-9
+                transition-all
+                duration-300
+                hover:border-white/[0.18]
+                hover:-translate-y-1
+              "
+            >
+
+              <div
+                className="
+                  font-display
+                  font-bold
+                  text-[1.3rem]
+                  text-white
+                  mb-2
+                "
+              >
+                Software Developer
+              </div>
+
+
+              <div
+                className="
+                  text-[0.75rem]
+                  text-white/30
+                  tracking-[0.1em]
+                  mb-5
+                  uppercase
+                "
+              >
+                Asoro Automotive
+              </div>
+
+
+              <p
+                className="
+                  text-[0.95rem]
+                  text-white/45
+                  leading-[1.85]
+                  max-w-[650px]
+                "
+              >
+                Working on backend infrastructure: designing and maintaining
+                APIs, building reliable data pipelines, and improving system
+                performance. Focused on maintainable code, reducing technical
+                debt, and architecting for scale.
+              </p>
+
+            </div>
+
+
+
+            {/* RESUME */}
+
+            <div className="mt-14">
+
+              <div
+                className="
+                  text-[0.7rem]
+                  text-white/30
+                  tracking-[0.16em]
+                  mb-5
+                  uppercase
+                "
+              >
+                Resume
+              </div>
+
+
+              <div
+                className="
+                  border
+                  border-white/[0.08]
+                  bg-[#212124]
+                  rounded-lg
+                  p-8
+                  flex
+                  items-center
+                  justify-between
+                  flex-wrap
+                  gap-6
+                  transition-all
+                  duration-300
+                  hover:border-white/[0.18]
+                  hover:-translate-y-1
+                "
+              >
+
+                <div>
+
+                  <div
+                    className="
+                      font-display
+                      font-bold
+                      text-[1.15rem]
+                      text-white
+                      mb-2
+                    "
+                  >
+                    Efe Emmanuel Obaro
+                  </div>
+
+
+                  <div
+                    className="
+                      text-[0.8rem]
+                      text-white/40
+                    "
+                  >
+                    Full Stack Developer · Python · FastAPI · Django ·
+                    PostgreSQL · System Design
+                  </div>
+
+                </div>
+
+
+                <a
+                  href="/Efe_Emmanuel_Obaro_Resume.pdf"
+                  download
+                  className="
+                    text-[0.78rem]
+                    tracking-[0.05em]
+                    px-5
+                    py-3
+                    bg-white
+                    text-black
+                    font-semibold
+                    inline-flex
+                    items-center
+                    gap-2
+                    rounded-sm
+                    transition-all
+                    duration-300
+                    hover:bg-white/85
+                    hover:-translate-y-1
+                  "
+                >
+                  <DownloadIcon />
+                  Download PDF
+                </a>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+
+        {/* =====================================================
+            CONTACT
+            ===================================================== */}
+
+        <section
+          className="
+            py-24
+            border-b
+            border-white/[0.08]
+            reveal
+          "
+          id="contact"
+        >
+
+          <div className="max-w-[1100px] mx-auto px-8">
+
+            <SectionLabel>
+              05 · CONTACT
+            </SectionLabel>
+
+
+            <div
+              className="
+                grid
+                grid-cols-2
+                gap-16
+                items-start
+                max-[700px]:grid-cols-1
+              "
+            >
+
+              <div>
+
+                <div
+                  className="
+                    font-display
+                    font-bold
+                    text-white
+                    leading-[1.05]
+                    tracking-[-0.03em]
+                    mb-6
+                  "
+                  style={{
+                    fontSize:
+                      'clamp(2.1rem, 5vw, 3.5rem)',
+                  }}
+                >
+                  Let's build
+                  <br />
+                  something real.
+                </div>
+
+
+                <p
+                  className="
+                    text-[0.95rem]
+                    text-white/45
+                    leading-[1.9]
+                    max-w-[520px]
+                  "
+                >
+                  Open to Full Stack Developer roles and interesting system
+                  design problems. If you're building something that needs
+                  to scale, let's talk.
+                </p>
+
+              </div>
+
+
+
+              <div className="flex flex-col gap-5">
+
+                {[
+                  {
+                    label: 'EMAIL',
+                    value: 'efeemmanuel2030@gmail.com',
+                    href: 'mailto:efeemmanuel2030@gmail.com',
+                  },
+                  {
+                    label: 'GITHUB',
+                    value: 'github.com/efeemmanuel',
+                    href: 'https://github.com/efeemmanuel',
+                  },
+                  {
+                    label: 'LINKEDIN',
+                    value: 'linkedin.com/in/efeemmanuel',
+                    href: 'https://www.linkedin.com/in/efeemmanuel',
+                  },
+                  {
+                    label: 'X (TWITTER)',
+                    value: '@efeobaro',
+                    href: 'https://x.com/ox_emmanuel',
+                  },
+                ].map(ci => (
+
+                  <div
+                    key={ci.label}
+                    className="
+                      border-l-2
+                      border-white/10
+                      pl-5
+                      transition-all
+                      duration-300
+                      hover:border-white
+                      group
+                    "
+                  >
+
+                    <div
+                      className="
+                        text-[0.68rem]
+                        text-white/30
+                        tracking-[0.13em]
+                        mb-1.5
+                        uppercase
+                      "
+                    >
+                      {ci.label}
+                    </div>
+
+
+                    <a
+                      href={ci.href}
+                      target={
+                        ci.href.startsWith('http')
+                          ? '_blank'
+                          : undefined
+                      }
+                      rel="noreferrer"
+                      className="
+                        text-[0.94rem]
+                        text-white/55
+                        block
+                        transition-colors
+                        duration-300
+                        group-hover:text-white
+                      "
+                    >
+                      {ci.value}
+                    </a>
+
+                  </div>
+
+                ))}
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+      </main>
+
+
+
+      {/* =========================================================
+          FOOTER
+          ========================================================= */}
+
+      <div
+        className="
+          lg:ml-[42%]
+        "
+      >
+        <Footer />
+      </div>
+
+
+
+      {/* =========================================================
+          ANIMATIONS
+          ========================================================= */}
+
       <style>{`
+
         @keyframes fadeIn {
+
           from {
             opacity: 0;
             transform: translateY(10px);
           }
+
           to {
             opacity: 1;
             transform: translateY(0);
           }
+
         }
 
+
+        @keyframes fadeInUp {
+
+          from {
+            opacity: 0;
+            transform: translateY(24px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+
+        }
+
+
         @keyframes blink {
-          0%, 45% {
+
+          0%,
+          45% {
             opacity: 1;
           }
 
-          50%, 100% {
+          50%,
+          100% {
             opacity: 0;
           }
+
         }
+
 
         .animate-blink {
-          animation: blink 1.1s steps(1) infinite;
+          animation:
+            blink 1.1s steps(1) infinite;
         }
+
 
         @keyframes shimmerText {
-          0% { background-position: 0% 50%; }
-          100% { background-position: 250% 50%; }
+
+          0% {
+            background-position: 0% 50%;
+          }
+
+          100% {
+            background-position: 250% 50%;
+          }
+
         }
+
 
         @keyframes floatBlob {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(40px, -50px) scale(1.12); }
-          66% { transform: translate(-30px, 30px) scale(0.92); }
+
+          0%,
+          100% {
+            transform:
+              translate(0, 0)
+              scale(1);
+          }
+
+          33% {
+            transform:
+              translate(40px, -50px)
+              scale(1.12);
+          }
+
+          66% {
+            transform:
+              translate(-30px, 30px)
+              scale(0.92);
+          }
+
         }
+
 
         @keyframes pulseGlow {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.0); }
-          50% { box-shadow: 0 0 22px 2px rgba(52, 211, 153, 0.12); }
+
+          0%,
+          100% {
+            box-shadow:
+              0 0 0 0
+              rgba(52, 211, 153, 0);
+          }
+
+          50% {
+            box-shadow:
+              0 0 22px 2px
+              rgba(52, 211, 153, 0.12);
+          }
+
         }
 
+
         @media (prefers-reduced-motion: reduce) {
-          *, *::before, *::after {
-            animation-duration: 0.001ms !important;
-            animation-iteration-count: 1 !important;
-            transition-duration: 0.001ms !important;
+
+          *,
+          *::before,
+          *::after {
+            animation-duration:
+              0.001ms !important;
+
+            animation-iteration-count:
+              1 !important;
+
+            transition-duration:
+              0.001ms !important;
           }
+
         }
+
+
+        @media (max-width: 1023px) {
+
+          #hero {
+            position: relative !important;
+            width: 100% !important;
+            height: auto !important;
+            min-height: 100svh !important;
+            padding:
+              7rem 2rem 5rem !important;
+          }
+
+          #hero > div {
+            min-height: 80svh;
+          }
+
+        }
+
       `}</style>
 
     </div>
